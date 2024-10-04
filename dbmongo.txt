@@ -1,0 +1,18 @@
+// Conectarse a la base de datos
+use bd_api_node;
+db.createCollection("Espacio");
+db.createCollection("Reserva");
+
+// Insertar documentos en la colección Reserva
+db.Reserva.insertMany([
+    { nombre: "Jorge", especialidad: "Cloud", dni: "74037295", telefono: "994758814" },
+    { nombre: "Rodrigo", especialidad: "Algoritmos", dni: "72481290", telefono: "987654321" },
+    { nombre: "Stewart", especialidad: "Metodos", dni: "76452819", telefono: "909405356" }
+]);
+
+// Insertar documentos en la colección Espacio
+db.Espacio.insertMany([
+    { nombre_curso: "Cloud", num_creditos: 3 },
+    { nombre_curso: "Algoritmos", num_creditos: 4 },
+    { nombre_curso: "Metodos", num_creditos: 3 }
+]);
