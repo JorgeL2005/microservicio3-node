@@ -11,8 +11,10 @@
   "description": "",
   "dependencies": {
     "body-parser": "^1.20.3",
+    "dotenv": "^16.4.5",
     "express": "^4.21.0",
-    "mongodb": "^6.9.0"
+    "mongodb": "^6.9.0",
+    "morgan": "^1.10.0"
   },
   "devDependencies": {
     "@types/body-parser": "^1.19.5",

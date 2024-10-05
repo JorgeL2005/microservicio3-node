@@ -1,27 +1,42 @@
 const express = require('express');
 const { MongoClient } = require('mongodb');
 const bodyParser = require('body-parser');
+const morgan = require('morgan'); // Para logging
+require('dotenv').config(); // Para usar variables de entorno
 const app = express();
 
 // Middleware para analizar el cuerpo de las solicitudes en formato JSON
 app.use(bodyParser.json());
+app.use(morgan('combined')); // Logging de las solicitudes HTTP
 
-// Configurar la URL de MongoDB (IP privada de la VM de la base de datos)
-const mongoURL = 'mongodb://172.31.43.70:27017';
+// Configurar la URL de MongoDB y otras variables
+const mongoURL = process.env.MONGO_URL || 'mongodb://172.31.43.70:27017'; // Es variable de entorno (Revisar .env)
+
+const DATABASE_NAME = 'bd_api_node';
+const COLLECTION_RESERVAS = 'Reserva';
+const COLLECTION_ESPACIOS = 'Espacio';
+
+let mongoClient; // Variable para almacenar la conexión de MongoDB
+
+// Reutilizar la conexión de MongoDB
+async function getMongoClient() {
+    if (!mongoClient) {
+        mongoClient = new MongoClient(mongoURL, { useUnifiedTopology: true });
+        await mongoClient.connect();
+    }
+    return mongoClient;
+}
 
 // Clase MongoAPI para manejar las operaciones CRUD
 class MongoAPI {
-    constructor(data) {
-        this.client = new MongoClient(mongoURL, { useUnifiedTopology: true });
-        this.database = data.database;
-        this.collection = data.collection;
-        this.data = data;
+    constructor(collectionName) {
+        this.collectionName = collectionName;
     }
 
     async connect() {
-        await this.client.connect();
-        this.db = this.client.db(this.database);
-        this.col = this.db.collection(this.collection);
+        const client = await getMongoClient();
+        this.db = client.db(DATABASE_NAME);
+        this.col = this.db.collection(this.collectionName);
     }
 
     async read() {
@@ -40,10 +55,10 @@ class MongoAPI {
         };
     }
 
-    async update() {
+    async update(data) {
         console.log('Updating Data');
-        const filter = this.data.Filter;
-        const updatedData = { $set: this.data.DataToBeUpdated };
+        const filter = data.Filter;
+        const updatedData = { $set: data.DataToBeUpdated };
         const response = await this.col.updateOne(filter, updatedData);
         return {
             Status: response.modifiedCount > 0 ? 'Successfully Updated' : 'Nothing was updated.'
@@ -58,9 +73,18 @@ class MongoAPI {
             Status: response.deletedCount > 0 ? 'Successfully Deleted' : 'Document not found.'
         };
     }
+}
 
-    async close() {
-        await this.client.close();
+// Función reutilizable para manejar operaciones CRUD
+async function handleCrudOperation(req, res, collection, operation) {
+    const mongoAPI = new MongoAPI(collection);
+    try {
+        await mongoAPI.connect();
+        const response = await operation(mongoAPI);
+        res.status(200).json(response);
+    } catch (error) {
+        console.error('Error during CRUD operation:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 }
 
@@ -69,76 +93,79 @@ app.get('/', (req, res) => {
     res.json({ Status: 'UP' });
 });
 
-// Leer documentos (GET)
-app.get('/reservas', async (req, res) => {
-    const data = req.body;
-    if (!data || !data.database || !data.collection) {
-        return res.status(400).json({ Error: 'Please provide connection information' });
-    }
+// Rutas para "Reservas"
 
-    const mongoAPI = new MongoAPI(data);
-    try {
-        await mongoAPI.connect();
-        const response = await mongoAPI.read();
-        res.status(200).json(response);
-    } finally {
-        await mongoAPI.close();
-    }
+// Leer documentos (GET)
+app.get('/reservas', (req, res) => {
+    handleCrudOperation(req, res, COLLECTION_RESERVAS, (api) => api.read());
 });
 
 // Insertar un documento (POST)
-app.post('/reservas', async (req, res) => {
+app.post('/reservas', (req, res) => {
     const data = req.body;
-    if (!data || !data.Document || !data.database || !data.collection) {
-        return res.status(400).json({ Error: 'Please provide valid document and connection information' });
+    if (!data || !data.Document) {
+        return res.status(400).json({ Error: 'Please provide valid document information' });
     }
-
-    const mongoAPI = new MongoAPI(data);
-    try {
-        await mongoAPI.connect();
-        const response = await mongoAPI.write(data);
-        res.status(200).json(response);
-    } finally {
-        await mongoAPI.close();
-    }
+    handleCrudOperation(req, res, COLLECTION_RESERVAS, (api) => api.write(data));
 });
 
 // Actualizar un documento (PUT)
-app.put('/reservas', async (req, res) => {
+app.put('/reservas', (req, res) => {
     const data = req.body;
-    if (!data || !data.Filter || !data.DataToBeUpdated || !data.database || !data.collection) {
+    if (!data || !data.Filter || !data.DataToBeUpdated) {
         return res.status(400).json({ Error: 'Please provide filter and data to be updated' });
     }
-
-    const mongoAPI = new MongoAPI(data);
-    try {
-        await mongoAPI.connect();
-        const response = await mongoAPI.update();
-        res.status(200).json(response);
-    } finally {
-        await mongoAPI.close();
-    }
+    handleCrudOperation(req, res, COLLECTION_RESERVAS, (api) => api.update(data));
 });
 
 // Eliminar un documento (DELETE)
-app.delete('/reservas', async (req, res) => {
+app.delete('/reservas', (req, res) => {
     const data = req.body;
-    if (!data || !data.Filter || !data.database || !data.collection) {
+    if (!data || !data.Filter) {
         return res.status(400).json({ Error: 'Please provide filter for deletion' });
     }
+    handleCrudOperation(req, res, COLLECTION_RESERVAS, (api) => api.delete(data));
+});
 
-    const mongoAPI = new MongoAPI(data);
-    try {
-        await mongoAPI.connect();
-        const response = await mongoAPI.delete(data);
-        res.status(200).json(response);
-    } finally {
-        await mongoAPI.close();
+// -----------------------------------------------------------------------------------------------------------------
+
+// Rutas para "Espacios"
+
+// Leer documentos (GET)
+app.get('/espacios', (req, res) => {
+    handleCrudOperation(req, res, COLLECTION_ESPACIOS, (api) => api.read());
+});
+
+// Insertar un documento (POST)
+app.post('/espacios', (req, res) => {
+    const data = req.body;
+    if (!data || !data.Document) {
+        return res.status(400).json({ Error: 'Please provide valid document information' });
     }
+    handleCrudOperation(req, res, COLLECTION_ESPACIOS, (api) => api.write(data));
+});
+
+// Actualizar un documento (PUT)
+app.put('/espacios', (req, res) => {
+    const data = req.body;
+    if (!data || !data.Filter || !data.DataToBeUpdated) {
+        return res.status(400).json({ Error: 'Please provide filter and data to be updated' });
+    }
+    handleCrudOperation(req, res, COLLECTION_ESPACIOS, (api) => api.update(data));
+});
+
+// Eliminar un documento (DELETE)
+app.delete('/espacios', (req, res) => {
+    const data = req.body;
+    if (!data || !data.Filter) {
+        return res.status(400).json({ Error: 'Please provide filter for deletion' });
+    }
+    handleCrudOperation(req, res, COLLECTION_ESPACIOS, (api) => api.delete(data));
 });
 
 // Iniciar servidor
-const PORT = 8911;
+const PORT = process.env.PORT || 8911; // REvisar archivo .env
 app.listen(PORT, () => {
     console.log(`Server running on http://0.0.0.0:${PORT}`);
 });
+

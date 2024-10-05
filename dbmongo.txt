@@ -5,9 +5,9 @@ db.createCollection("Reserva");
 
 // Insertar documentos en la colección Reserva
 db.Reserva.insertMany([
-    { nombre: "Jorge", especialidad: "Cloud", dni: "74037295", telefono: "994758814" },
-    { nombre: "Rodrigo", especialidad: "Algoritmos", dni: "72481290", telefono: "987654321" },
-    { nombre: "Stewart", especialidad: "Metodos", dni: "76452819", telefono: "909405356" }
+    { estado: "Disponible", fecha_inicio: new Date("2024-10-04T09:00:00"), fecha_fin: new Date("2024-10-04T10:00:00"), idCurso: 1, idProfesor: 1},
+    { estado: "Ocupado", fecha_inicio: new Date("2024-10-05T09:00:00"), fecha_fin: new Date("2024-10-05T10:00:00"), idCurso: 2, idProfesor: 2},
+    { estado: "Disponible", fecha_inicio: new Date("2024-10-07T09:00:00"), fecha_fin: new Date("2024-10-07T10:00:00"), idCurso: 3, idProfesor: 3}
 ]);
 
 // Insertar documentos en la colección Espacio
