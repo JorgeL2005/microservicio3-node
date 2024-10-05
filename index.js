@@ -89,6 +89,28 @@ async function handleCrudOperation(req, res, collection, operation) {
     }
 }
 
+// funcion que llama al Microservicio de Python
+
+async function verificarCurso(idCurso) {
+    try {
+        // URL del microservicio Python para verificar el curso
+        const pythonApiUrl = `http://127.0.0.1:8000/cursos/${idCurso}`; // Cambiar a la URL correcta de tu API de Python
+        const response = await axios.get(pythonApiUrl);
+        
+        if (response.data && response.data.Curso) {
+            return true; // El curso existe
+        } else {
+            return false; // El curso no existe
+        }
+    } catch (error) {
+        console.error('Error al verificar el curso:', error);
+        return false; // Considerar como que no existe si hay un error en la solicitud
+    }
+}
+
+
+
+
 // Ruta base
 app.get('/', (req, res) => {
     res.json({ Status: 'UP' });
@@ -101,12 +123,19 @@ app.get('/reservas', (req, res) => {
     handleCrudOperation(req, res, COLLECTION_RESERVAS, (api) => api.read());
 });
 
-// Insertar un documento (POST)
-app.post('/reservas', (req, res) => {
+// POST para crear una reserva
+app.post('/reservas', async (req, res) => {
     const data = req.body;
-    if (!data || !data.Document) {
-        return res.status(400).json({ Error: 'Please provide valid document information' });
+    if (!data || !data.Document || !data.Document.idCurso) {
+        return res.status(400).json({ Error: 'Por favor proporcione un documento válido con idCurso.' });
     }
+    const idCurso = data.Document.idCurso;
+    // Verificar si el curso existe en la API de Python
+    const cursoExiste = await verificarCurso(idCurso);
+    if (!cursoExiste) {
+        return res.status(404).json({ Error: `El curso con id ${idCurso} no existe en la API de Python.` });
+    }
+    // Si el curso existe, proceder a insertar la reserva
     handleCrudOperation(req, res, COLLECTION_RESERVAS, (api) => api.write(data));
 });
 
