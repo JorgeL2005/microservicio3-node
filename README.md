@@ -1,4 +1,4 @@
-## API en Node.js para el proyecto de Cloud
+# API en Node.js para el proyecto de Cloud
 
 Dependencias a considerar:
 - express
@@ -6,5 +6,5 @@ Dependencias a considerar:
 - mongodb
 - morgan
 - dotenv
-Si no detecta a pesar de correrlo, usar:
+ #### Si no detecta las librerías a pesar de correrlo, usar:
  npm install --save-dev @types/(la libreria que no detecta)
