@@ -3,6 +3,7 @@ const { MongoClient } = require('mongodb');
 const bodyParser = require('body-parser');
 const morgan = require('morgan'); // Para logging
 require('dotenv').config(); // Para usar variables de entorno
+const axios = require('axios'); // Para hacer solicitudes HTTP a la API de Python
 const app = express();
 
 // Middleware para analizar el cuerpo de las solicitudes en formato JSON
