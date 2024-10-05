@@ -10,7 +10,7 @@ app.use(bodyParser.json());
 app.use(morgan('combined')); // Logging de las solicitudes HTTP
 
 // Configurar la URL de MongoDB y otras variables
-const mongoURL = process.env.MONGO_URL || 'mongodb://172.31.43.70:27017'; // Es variable de entorno (Revisar .env)
+const mongoURL = process.env.MONGO_URL || 'mongodb://localhost:27017'; // Es variable de entorno (Revisar .env)
 
 const DATABASE_NAME = 'bd_api_node';
 const COLLECTION_RESERVAS = 'Reserva';
